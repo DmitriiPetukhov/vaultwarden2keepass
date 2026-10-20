@@ -81,7 +81,7 @@ export class BitwardenExtractor {
         '--passwordenv BW_PASSWORD --raw',
         'Unlocking with password',
       );
-      console.log('✅ Unlocked with password and got session:', session);
+      console.log('✅ Unlocked with password');
       process.env['BW_SESSION'] = session;
       this.session = session;
     }
@@ -139,6 +139,7 @@ export class BitwardenExtractor {
     console.log('💻 Using bitwarden CLI to export vault and organizations');
 
     this.login();
+    this.runCli('sync', undefined, 'Synchronizing vault before backup');
 
     const organizations = this.getCliJson<Organization[]>(
       'list',

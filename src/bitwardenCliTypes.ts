@@ -112,8 +112,22 @@ export interface Identity {
   licenseNumber?: string;
 }
 
+export interface Fido2Credential {
+  credentialId: string;
+  keyType?: string;
+  keyAlgorithm?: string;
+  keyCurve?: string;
+  keyValue: string;
+  rpId: string;
+  rpName?: string | null;
+  userHandle?: string | null;
+  userName?: string | null;
+  counter?: string | number | null;
+  discoverable?: string | boolean | null;
+}
+
 export interface Login {
-  fido2Credentials: unknown[];
+  fido2Credentials?: Fido2Credential[] | null;
   uris: Uri[];
   username?: string;
   password?: string;
