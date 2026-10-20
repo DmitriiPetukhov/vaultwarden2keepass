@@ -4,6 +4,7 @@ import { join, resolve } from 'path';
 import type { Item, Organization } from './bitwardenCliTypes';
 import type { BitwardenData } from './bitwardenExtractor';
 import { fieldMappings } from './fieldMappings';
+import { addPasskeyToEntry } from './passkeys';
 import {
   getMapping,
   type FieldMapping,
@@ -171,6 +172,20 @@ export class KeePassWriter {
     console.log('⏱️  Adding items as entries');
     // add items
     for (const item of bitwarden.items) {
+      const passkeys = 'login' in item ? (item.login.fido2Credentials ?? []) : [];
+      if (passkeys.length > 1) {
+        throw new Error(
+          `Item ${item.id} contains multiple passkeys; cannot store them all in one KeePassXC entry`,
+        );
+      }
+      for (const passkey of passkeys) {
+        if (Number(passkey.counter) > 0) {
+          console.warn(
+            `⚠️ Passkey for item '${item.name}' has a nonzero signature counter; restored authentication may be rejected by some relying parties`,
+          );
+        }
+      }
+
       // get all group and all collections of item
       const groupsOfItem: KdbxGroup[] = [];
       if (!item.organizationId) {
@@ -253,6 +268,15 @@ export class KeePassWriter {
           entry.tags.push('Login');
 
           this.addFields(entry, item.login, item, fieldMappings.login);
+
+          for (const passkey of passkeys) {
+            try {
+              addPasskeyToEntry(entry, passkey, item.login.username ?? '');
+            } catch (error) {
+              const reason = error instanceof Error ? error.message : 'invalid data';
+              throw new Error(`Item ${item.id} contains invalid passkey data: ${reason}`);
+            }
+          }
         }
 
         if ('secureNote' in item) {
